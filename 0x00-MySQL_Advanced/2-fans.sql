@@ -4,12 +4,5 @@
 -- Script can be executed on any database
 -- 2-fans.sql
 
-SELECT 
-  origin, 
-  SUM(*) AS nb_bands
-FROM 
-  metal_bands
-GROUP BY 
-  origin
-ORDER BY 
-  nb_bands DESC;
+SELECT origin, COUNT(*) AS nb_bands FROM metal_bands 
+GROUP BY origin ORDER BY nb_bands DESC;

@@ -6,7 +6,7 @@
 
 SELECT 
   origin, 
-  COUNT(*) AS nb_bands
+  SUM(*) AS nb_bands
 FROM 
   metal_bands
 GROUP BY 

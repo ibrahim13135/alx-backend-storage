@@ -1,0 +1,223 @@
+#!/bin/bash
+a#!/bin/bash
+
+
+# Add MongoDB GPG key
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://www.mongodb.org/static/pgp/server-4.2.asc | sudo tee /etc/apt/keyrings/mongodb-org-4.2.gpg > /dev/null
+
+# Create a list file for MongoDB
+echo "deb [ arch=amd64,arm64 signed-by=/etc/apt/keyrings/mongodb-org-4.2.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+
+# Update the local package database
+sudo apt-get update
+
+# Install MongoDB packages
+sudo apt-get install -y mongodb-org
+
+# Create the data directory for MongoDB if needed
+sudo mkdir -p /data/db
+sudo chown -R mongodb:mongodb /data/db
+
+# Create Systemd service file for MongoDB
+sudo tee /etc/systemd/system/mongod.service > /dev/null <<EOT
+[Unit]
+Description=MongoDB Database Server
+Documentation=https://docs.mongodb.org/manual
+After=network.target
+
+[Service]
+User=mongodb
+ExecStart=/usr/bin/mongod --config /etc/mongod.conf
+ExecReload=/usr/bin/mongod --signal HUP $MAINPID
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOT
+
+# Reload Systemd daemon
+sudo systemctl daemon-reload
+
+# Start and enable MongoDB service
+sudo systemctl start mongod
+sudo systemctl enable mongod
+
+# Check MongoDB status
+sudo systemctl status mongod
+
+# Check MongoDB version
+mongo --version
+
+# Install pymongo using pip
+pip3 install pymongo
+
+# Verify pymongo installation
+python3 -c "import pymongo; print(pymongo.version)"
+
+# Example Python script to interact with MongoDB using pymongo
+cat << EOF > mongo_example.py
+from pymongo import MongoClient
+
+# Connect to MongoDB
+client = MongoClient('mongodb://localhost:27017/')
+
+# Create or switch to a database
+db = client['example_db']
+
+# Create or switch to a collection
+collection = db['example_collection']
+
+# Insert a document
+document = {'name': 'John Doe', 'age': 29, 'city': 'New York'}
+collection.insert_one(document)
+
+# Query the document
+result = collection.find_one({'name': 'John Doe'})
+print("Inserted Document:", result)
+
+# Update the document
+collection.update_one({'name': 'John Doe'}, {'$set': {'age': 30}})
+
+# Query the updated document
+updated_result = collection.find_one({'name': 'John Doe'})
+print("Updated Document:", updated_result)
+
+# Delete the document
+collection.delete_one({'name': 'John Doe'})
+
+# Verify deletion
+deleted_result = collection.find_one({'name': 'John Doe'})
+print("Deleted Document:", deleted_result)
+
+EOF
+
+# Run the example Python script
+python3 mongo_example.py
+
+# List databases to verify MongoDB interaction
+echo "show dbs" | mongo
+
+# Ensure the script is running as root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
+
+# Add MongoDB GPG key
+sudo apt-get install -y gnupg
+wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+
+# Add MongoDB repository for Ubuntu 21.10 (Impish Indri)
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu impish/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+
+# Update the local package database
+sudo apt-get update
+
+# Install MongoDB packages
+sudo apt-get install -y mongodb-org
+
+# Create the data directory for MongoDB if needed
+sudo mkdir -p /data/db
+sudo chown -R `id -un` /data/db
+
+# Create Init Script for MongoDB (for non-systemd init systems)
+sudo tee /etc/init.d/mongod > /dev/null <<EOT
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          mongod
+# Required-Start:    \$remote_fs \$syslog
+# Required-Stop:     \$remote_fs \$syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time
+# Description:       Enable service provided by daemon.
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+case "\$1" in
+  start)
+    log_daemon_msg "Starting MongoDB"
+    start-stop-daemon --start --quiet --background --exec /usr/bin/mongod -- --config /etc/mongod.conf
+    log_end_msg \$?
+    ;;
+  stop)
+    log_daemon_msg "Stopping MongoDB"
+    start-stop-daemon --stop --quiet --exec /usr/bin/mongod
+    log_end_msg \$?
+    ;;
+  restart)
+    \$0 stop
+    \$0 start
+    ;;
+  status)
+    status_of_proc -p /var/run/mongod.pid /usr/bin/mongod && exit 0 || exit \$?
+    ;;
+  *)
+    log_action_msg "Usage: /etc/init.d/mongod {start|stop|restart|status}"
+    exit 1
+esac
+
+exit 0
+EOT
+
+# Make the init script executable
+sudo chmod +x /etc/init.d/mongod
+
+# Start MongoDB service using the init script
+sudo service mongod start
+
+# Check MongoDB status
+sudo service mongod status
+
+# Check MongoDB version
+mongo --version
+
+# Install pymongo using pip
+pip3 install pymongo
+
+# Verify pymongo installation
+python3 -c "import pymongo; print(pymongo.__version__)"
+
+# Example Python script to interact with MongoDB using pymongo
+cat << EOF > mongo_example.py
+from pymongo import MongoClient
+
+# Connect to MongoDB
+client = MongoClient('mongodb://localhost:27017/')
+
+# Create or switch to a database
+db = client['example_db']
+
+# Create or switch to a collection
+collection = db['example_collection']
+
+# Insert a document
+document = {'name': 'John Doe', 'age': 29, 'city': 'New York'}
+collection.insert_one(document)
+
+# Query the document
+result = collection.find_one({'name': 'John Doe'})
+print("Inserted Document:", result)
+
+# Update the document
+collection.update_one({'name': 'John Doe'}, {'\$set': {'age': 30}})
+
+# Query the updated document
+updated_result = collection.find_one({'name': 'John Doe'})
+print("Updated Document:", updated_result)
+
+# Delete the document
+collection.delete_one({'name': 'John Doe'})
+
+# Verify deletion
+deleted_result = collection.find_one({'name': 'John Doe'})
+print("Deleted Document:", deleted_result)
+EOF
+
+# Run the example Python script
+python3 mongo_example.py
+
+# List databases to verify MongoDB interaction
+echo "show dbs" | mongo

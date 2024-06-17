@@ -1,0 +1,19 @@
+#!/bin/bash
+# Update Package List
+sudo apt update
+# Install Dependencies
+sudo apt install -y gnupg wget
+# Add MongoDB Repository
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://www.mongodb.org/static/pgp/server-4.2.asc | sudo tee /etc/apt/keyrings/mongodb-org-4.2.gpg > /dev/null
+# wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+# Create a List File for MongoDB
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+# Reload Package Database
+sudo apt update
+# Install MongoDB Packages
+sudo apt install -y mongodb-org
+# Start MongoDB
+sudo service mongod start
+# Verify Installation
+sudo service mongod status

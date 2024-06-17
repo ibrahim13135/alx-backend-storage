@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+# Remove the existing MongoDB repository configuration
+sudo rm /etc/apt/sources.list.d/mongodb-org-4.4.list
+# Add the correct repository
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+# Add the public key correctly
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo tee /etc/apt/trusted.gpg.d/mongodb-org-4.4.gpg > /dev/null
+# List all Docker repository files
+ls /etc/apt/sources.list.d | grep docker
+# If you find duplicate entries, remove one of them. For example, if archive_uri-https_download_docker_com_linux_ubuntu-jammy.list is a duplicate, you can remove it
+sudo rm /etc/apt/sources.list.d/archive_uri-https_download_docker_com_linux_ubuntu-jammy.list
+sudo apt update

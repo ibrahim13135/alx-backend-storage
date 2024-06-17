@@ -1,0 +1,13 @@
+#!/bin/bash
+# Remove the problematic MongoDB repository entries from your sources list files.
+# Check your MongoDB repository configuration and ensure you are using the correct URL and public key.
+sudo rm /etc/apt/sources.list.d/mongodb-org-4.4.list
+sudo rm /etc/apt/sources.list.d/mongodb-org-7.0.list
+#  re-add the MongoDB repository with the correct GPG key
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+sudo apt-get update
+# Remove the duplicate Docker repository entries. You can keep only one of them, for example, keep docker.list and remove the other.
+sudo rm /etc/apt/sources.list.d/archive_uri-https_download_docker_com_linux_ubuntu-jammy.list
+sudo apt-get update
+sudo apt update

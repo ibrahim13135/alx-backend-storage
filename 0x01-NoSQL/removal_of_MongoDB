@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Ensure the script is running as root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
+
+# Stop MongoDB service
+sudo service mongod stop
+
+# Remove MongoDB packages
+sudo apt-get purge mongodb-org*
+
+# Remove MongoDB databases and logs
+sudo rm -r /var/log/mongodb
+sudo rm -r /var/lib/mongodb
+sudo rm -r /data/db
+
+# Remove MongoDB configuration and init files (adjust paths based on your setup)
+sudo rm /etc/mongod.conf
+sudo rm /etc/init.d/mongod   # For non-systemd init systems
+sudo rm /lib/systemd/system/mongod.service   # For systemd systems
+
+# Clean up MongoDB repository list file (adjust filename if necessary)
+sudo rm /etc/apt/sources.list.d/mongodb-org-5.0.list
+
+# Reload systemd daemon
+sudo systemctl daemon-reload
+
+# Clean up APT repository cache
+sudo apt-get autoremove -y
+sudo apt-get autoclean -y
+sudo apt-get update

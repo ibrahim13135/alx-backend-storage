@@ -1090,3 +1090,121 @@ if __name__ == '__main__':
 - **Nginx Configuration** ensures that the requests are properly routed to the Flask application running on a specific port.
 
 This setup allows you to build a robust application where Nginx efficiently handles incoming traffic and routes it to your Python-based backend which performs database operations on MongoDB.
+
+
+
+-----
+
+anthor example : The script connects to a MongoDB database, retrieves various statistics from the nginx collection, and prints them to the console. This includes the total number of logs, the number of logs for each HTTP method, and the number of GET requests to the /status endpoint. The script is designed to be run directly, and it uses the pymongo library to interact with MongoDB.
+
+
+#### 1. Shebang and Docstring
+```python
+#!/usr/bin/env python3
+""" 12. Log stats
+"""
+```
+- **Shebang (`#!/usr/bin/env python3`)**: This line tells the system that the script should be run using Python 3.
+- **Docstring**: This is a brief description of the script, indicating that it provides log statistics.
+
+#### 2. Importing Required Modules
+```python
+from pymongo import MongoClient
+```
+- **pymongo**: This is the official Python driver for MongoDB. It allows you to interact with MongoDB databases using Python.
+
+#### 3. Defining the `log_stats` Function
+```python
+def log_stats():
+    """ log_stats.
+    """
+    client = MongoClient('mongodb://127.0.0.1:27017')
+    logs_collection = client.logs.nginx
+    total = logs_collection.count_documents({})
+    get = logs_collection.count_documents({"method": "GET"})
+    post = logs_collection.count_documents({"method": "POST"})
+    put = logs_collection.count_documents({"method": "PUT"})
+    patch = logs_collection.count_documents({"method": "PATCH"})
+    delete = logs_collection.count_documents({"method": "DELETE"})
+    path = logs_collection.count_documents(
+        {"method": "GET", "path": "/status"})
+    print(f"{total} logs")
+    print("Methods:")
+    print(f"\tmethod GET: {get}")
+    print(f"\tmethod POST: {post}")
+    print(f"\tmethod PUT: {put}")
+    print(f"\tmethod PATCH: {patch}")
+    print(f"\tmethod DELETE: {delete}")
+    print(f"{path} status check")
+```
+- **MongoClient**: Establishes a connection to the MongoDB server running on `localhost` at the default port `27017`.
+- **logs_collection**: Refers to the `nginx` collection within the `logs` database.
+- **count_documents**: A method that counts the number of documents in a collection that match a given query. Various counts are obtained:
+  - `total`: Total number of documents in the `nginx` collection.
+  - `get`, `post`, `put`, `patch`, `delete`: Number of documents for each HTTP method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`).
+  - `path`: Number of documents where the method is `GET` and the path is `/status`.
+
+- **print statements**: Outputs the counts to the console in a formatted manner.
+
+#### 4. Main Block
+```python
+if __name__ == "__main__":
+    log_stats()
+```
+- **`if __name__ == "__main__":`**: Ensures that the `log_stats` function is only called when the script is run directly, not when it is imported as a module in another script.
+
+### Running the Script
+
+#### 1. Setup MongoDB with Sample Data
+- Download and unzip the sample data:
+  ```bash
+  curl -o dump.zip -s "https://s3.amazonaws.com/intranet-projects-files/holbertonschool-webstack/411/dump.zip"
+  unzip dump.zip
+  ```
+- Restore the data into MongoDB:
+  ```bash
+  mongorestore dump
+  ```
+
+#### 2. Execute the Script
+Run the script to see the output:
+```bash
+./12-log_stats.py
+```
+
+### Detailed Example
+
+Let's walk through an example:
+
+1. **Total Number of Logs**:
+   - The script counts all documents in the `nginx` collection.
+   ```python
+   total = logs_collection.count_documents({})
+   ```
+   Output: `94778 logs`
+
+2. **Count by HTTP Methods**:
+   - Counts the documents for each HTTP method.
+   ```python
+   get = logs_collection.count_documents({"method": "GET"})
+   post = logs_collection.count_documents({"method": "POST"})
+   put = logs_collection.count_documents({"method": "PUT"})
+   patch = logs_collection.count_documents({"method": "PATCH"})
+   delete = logs_collection.count_documents({"method": "DELETE"})
+   ```
+   Output:
+   ```
+   Methods:
+       method GET: 93842
+       method POST: 229
+       method PUT: 0
+       method PATCH: 0
+       method DELETE: 0
+   ```
+
+3. **Count GET Requests with Specific Path**:
+   - Counts documents where the `method` is `GET` and `path` is `/status`.
+   ```python
+   path = logs_collection.count_documents({"method": "GET", "path": "/status"})
+   ```
+   Output: `47415 status check`

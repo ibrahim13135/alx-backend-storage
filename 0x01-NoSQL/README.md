@@ -935,3 +935,158 @@ if __name__ == "__main__":
 - **`aggregate()`**: Perform advanced data processing and transformation through a pipeline of stages.
 
 Each of these operators and functions serves specific purposes in querying and transforming data in MongoDB. Using them effectively can greatly enhance your data retrieval and processing capabilities in `pymongo`.
+
+
+----------------------------------------
+
+
+To establish a relationship between Nginx and MongoDB in a Python application, we can create a simple web application that uses Nginx as a reverse proxy server to route requests to a Python backend, which then interacts with MongoDB to handle CRUD operations. Below is a detailed explanation with examples on how to achieve this.
+
+### Prerequisites
+
+- **Nginx**: Installed and configured on your server.
+- **MongoDB**: Running instance.
+- **Python**: Installed with necessary packages (`Flask` and `pymongo`).
+
+### Step-by-Step Guide
+
+1. **Set Up MongoDB and Python Backend**:
+   We'll use `Flask` to create a simple RESTful API that interacts with MongoDB using `pymongo`.
+
+2. **Configure Nginx as a Reverse Proxy**:
+   Nginx will forward incoming HTTP requests to our Flask application.
+
+### Python Backend with Flask and PyMongo
+
+1. **Install Required Packages**:
+   Ensure you have Flask and PyMongo installed:
+   ```bash
+   pip install flask pymongo
+   ```
+
+2. **Create a Flask Application**:
+   Below is a `main.py` file implementing basic CRUD operations (GET, POST, PUT, PATCH, DELETE) with MongoDB.
+
+```python
+# main.py
+from flask import Flask, request, jsonify
+from pymongo import MongoClient
+
+app = Flask(__name__)
+
+# MongoDB connection
+client = MongoClient('mongodb://localhost:27017/')
+db = client['mydatabase']
+collection = db['customers']
+
+@app.route('/customers', methods=['GET'])
+def get_customers():
+    customers = list(collection.find({}, {'_id': 0}))
+    return jsonify(customers)
+
+@app.route('/customers', methods=['POST'])
+def add_customer():
+    data = request.json
+    result = collection.insert_one(data)
+    return jsonify({'message': 'Customer added', 'id': str(result.inserted_id)}), 201
+
+@app.route('/customers/<name>', methods=['PUT'])
+def update_customer(name):
+    data = request.json
+    result = collection.update_one({'name': name}, {'$set': data})
+    return jsonify({'message': 'Customer updated' if result.modified_count > 0 else 'No changes made'}), 200
+
+@app.route('/customers/<name>', methods=['PATCH'])
+def patch_customer(name):
+    data = request.json
+    result = collection.update_one({'name': name}, {'$set': data})
+    return jsonify({'message': 'Customer partially updated' if result.modified_count > 0 else 'No changes made'}), 200
+
+@app.route('/customers/<name>', methods=['DELETE'])
+def delete_customer(name):
+    result = collection.delete_one({'name': name})
+    return jsonify({'message': 'Customer deleted' if result.deleted_count > 0 else 'Customer not found'}), 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+```
+
+### Nginx Configuration
+
+1. **Install Nginx**:
+   If you don't have Nginx installed, you can install it using:
+   ```bash
+   sudo apt update
+   sudo apt install nginx
+   ```
+
+2. **Configure Nginx as a Reverse Proxy**:
+   Create a new configuration file for your Flask application, typically located in `/etc/nginx/sites-available/`.
+
+   Example configuration `/etc/nginx/sites-available/flask_app`:
+   ```nginx
+   server {
+       listen 80;
+       server_name your_domain_or_IP;
+
+       location / {
+           proxy_pass http://127.0.0.1:5000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+
+3. **Enable the Configuration and Restart Nginx**:
+   Create a symbolic link to enable the site and restart Nginx.
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/flask_app /etc/nginx/sites-enabled/
+   sudo nginx -t  # Test the configuration for syntax errors
+   sudo systemctl restart nginx
+   ```
+
+### Testing the Application
+
+1. **Start the Flask Application**:
+   ```bash
+   python main.py
+   ```
+
+2. **Make Requests**:
+   You can use tools like `curl` or Postman to make requests to your Nginx server, which will forward the requests to your Flask application.
+
+   **GET Request**:
+   ```bash
+   curl http://your_domain_or_IP/customers
+   ```
+
+   **POST Request**:
+   ```bash
+   curl -X POST -H "Content-Type: application/json" -d '{"name": "Alice", "age": 28}' http://your_domain_or_IP/customers
+   ```
+
+   **PUT Request**:
+   ```bash
+   curl -X PUT -H "Content-Type: application/json" -d '{"age": 29}' http://your_domain_or_IP/customers/Alice
+   ```
+
+   **PATCH Request**:
+   ```bash
+   curl -X PATCH -H "Content-Type: application/json" -d '{"age": 30}' http://your_domain_or_IP/customers/Alice
+   ```
+
+   **DELETE Request**:
+   ```bash
+   curl -X DELETE http://your_domain_or_IP/customers/Alice
+   ```
+
+### Summary
+
+- **Nginx** serves as a reverse proxy, forwarding requests to the Flask backend.
+- **Flask** handles the HTTP methods (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) and interacts with MongoDB.
+- **PyMongo** is used for performing CRUD operations on MongoDB.
+- **Nginx Configuration** ensures that the requests are properly routed to the Flask application running on a specific port.
+
+This setup allows you to build a robust application where Nginx efficiently handles incoming traffic and routes it to your Python-based backend which performs database operations on MongoDB.

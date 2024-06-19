@@ -223,7 +223,7 @@ These commands and examples cover the fundamental data types and operations in R
 
 Certainly! Below is a detailed explanation of various Redis commands with their outputs and explanations for each command.
 
-### 1. Key-Value Operations
+### More
 
 #### SET and GET
 **Command:**

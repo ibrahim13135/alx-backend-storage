@@ -23,7 +23,8 @@ def count_calls(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         """
-        Wrapper function that increments the call count and calls the original method.
+        Wrapper function that increments the call count and calls
+        the original method.
         """
         key = method.__qualname__
         self._redis.incr(key)
@@ -44,7 +45,8 @@ def call_history(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         """
-        Wrapper function that stores inputs and outputs history and calls the original method.
+        Wrapper function that stores inputs and outputs history and
+        calls the original method.
         """
         input_key = f"{method.__qualname__}:inputs"
         output_key = f"{method.__qualname__}:outputs"
@@ -85,17 +87,20 @@ class Cache:
         self._redis.set(key, data)
         return key
 
-    def get(self, key: str, fn: Optional[Callable] = None) -> Union[str, bytes, int, float, None]:
+    def get(self, key: str, fn: Optional[Callable] = None) -> Union[
+            str, bytes, int, float, None]:
         """
         Retrieve the data stored in Redis for the given key and optionally
         convert it using the provided function.
 
         Args:
             key (str): The key of the data to retrieve.
-            fn (Callable, optional): A function to convert the data. Defaults to None.
+            fn (Callable, optional): A function to convert the data.
+            Defaults to None.
 
         Returns:
-            Union[str, bytes, int, float, None]: The retrieved data or None if the key does not exist.
+            Union[str, bytes, int, float, None]: The retrieved data or
+            None if the key does not exist.
         """
         data = self._redis.get(key)
         if data is None:
@@ -106,25 +111,29 @@ class Cache:
 
     def get_str(self, key: str) -> Optional[str]:
         """
-        Retrieve the data stored in Redis for the given key and convert it to a string.
+        Retrieve the data stored in Redis for the given key and convert it
+        to a string.
 
         Args:
             key (str): The key of the data to retrieve.
 
         Returns:
-            Optional[str]: The retrieved data as a string or None if the key does not exist.
+            Optional[str]: The retrieved data as a string or None if the key
+            does not exist.
         """
         return self.get(key, fn=lambda d: d.decode('utf-8'))
 
     def get_int(self, key: str) -> Optional[int]:
         """
-        Retrieve the data stored in Redis for the given key and convert it to an integer.
+        Retrieve the data stored in Redis for the given key and convert it
+        to an integer.
 
         Args:
             key (str): The key of the data to retrieve.
 
         Returns:
-            Optional[int]: The retrieved data as an integer or None if the key does not exist.
+            Optional[int]: The retrieved data as an integer or None if the key
+            does not exist.
         """
         return self.get(key, fn=int)
 
@@ -145,4 +154,5 @@ def replay(method: Callable):
 
     print(f"{method.__qualname__} was called {len(inputs)} times:")
     for inp, out in zip(inputs, outputs):
-        print(f"{method.__qualname__}(*{inp.decode('utf-8')}) -> {out.decode('utf-8')}")
+        print(f"{method.__qualname__}(*{inp.decode('utf-8')}) -> "
+              f"{out.decode('utf-8')}")

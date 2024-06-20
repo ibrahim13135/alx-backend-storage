@@ -1,81 +1,64 @@
 #!/usr/bin/env python3
 """
-Module for caching and tracking web pages
+This module provides a function to fetch a webpage and cache its content
+in Redis with an expiration time, while tracking the number of accesses
+to each URL.
 """
-import requests
 import redis
-import time
-from functools import wraps
+import requests
 from typing import Callable
+from functools import wraps
 
-r = redis.Redis()
+
+redis_client = redis.Redis()
 
 
-def cache_and_track(method: Callable) -> Callable:
+def count_accesses(method: Callable) -> Callable:
     """
-    Decorator that caches the result of a function and tracks the number of
-    times it's called.
+    Decorator to count the number of accesses to a URL.
 
     Args:
-        method (Callable): The function to be decorated.
+        method (Callable): The method to be decorated.
 
     Returns:
-        Callable: The decorated function.
+        Callable: The wrapped method.
     """
     @wraps(method)
-    def wrapper(url: str) -> str:
+    def wrapper(url: str, *args, **kwargs) -> str:
         """
-        Wrapper function that caches and tracks the result of the decorated
-        function.
-
-        Args:
-            url (str): The URL to be fetched.
-
-        Returns:
-            str: The HTML content of the URL.
+        Wrapper function that increments the access count for the URL
+        and calls the original method.
         """
-        key = f"cache:{url}"
-        count_key = f"count:{url}"
-
-        # Check if the page is cached
-        cached_page = r.get(key)
-        if cached_page:
-            r.incr(count_key)
-            return cached_page.decode("utf-8")
-
-        # Get the page from the URL
-        page = method(url)
-
-        # Cache the page for 10 seconds
-        r.setex(key, 10, page)
-        r.incr(count_key)
-
-        return page
-
+        redis_client.incr(f"count:{url}")
+        return method(url, *args, **kwargs)
     return wrapper
 
 
-@cache_and_track
+@count_accesses
 def get_page(url: str) -> str:
     """
-    Fetches the HTML content of a URL.
+    Fetch the HTML content of a URL and cache it in Redis with an
+    expiration time.
 
     Args:
-        url (str): The URL to be fetched.
+        url (str): The URL to fetch.
 
     Returns:
         str: The HTML content of the URL.
     """
+    cached_page = redis_client.get(f"cached:{url}")
+    if cached_page:
+        return cached_page.decode('utf-8')
+
     response = requests.get(url)
-    return response.text
+    html_content = response.text
+
+    redis_client.setex(f"cached:{url}", 10, html_content)
+    return html_content
 
 
 if __name__ == "__main__":
-    url = "http://slowwly.robertomurray.co.uk/delay/3000/url/http://google.com"
-    for _ in range(5):
-        start_time = time.time()
-        page = get_page(url)
-        end_time = time.time()
-        print(f"Time taken: {end_time - start_time:.2f} seconds")
-        print(f"Access count: {r.get(f'count:{url}').decode('utf-8')}")
-        print("---")
+    url = ("http://slowwly.robertomurray.co.uk/delay/3000/url/"
+           "http://www.google.co.uk")
+    print(get_page(url))
+    print(redis_client.get(f"count:{url}").decode('utf-8'))
